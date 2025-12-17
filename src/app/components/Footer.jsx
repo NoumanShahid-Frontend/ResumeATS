@@ -164,15 +164,8 @@ export default function Footer() {
           viewport={{ once: true }}
           className="border-t border-white/20 pt-8 flex flex-col md:flex-row justify-between items-center"
         >
-          <div className="flex items-center gap-2 text-gray-300 mb-4 md:mb-0">
-            <span>© 2024 Resume ATS Fixer. Made with</span>
-            <motion.div
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 1, repeat: Infinity }}
-            >
-              <FaHeart className="text-red-500" />
-            </motion.div>
-            <span>for job seekers worldwide.</span>
+          <div className="text-gray-300 mb-4 md:mb-0">
+            <span>© {new Date().getFullYear()} Resume ATS Fixer. All rights reserved.</span>
           </div>
           
           <motion.button
