@@ -44,10 +44,19 @@ export default function FileUpload({ onUpload }) {
         body: formData
       });
       
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const result = await response.json();
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      
       onUpload(result);
     } catch (error) {
       console.error('Upload failed:', error);
+      alert(`Upload failed: ${error.message}`);
     } finally {
       setLoading(false);
     }

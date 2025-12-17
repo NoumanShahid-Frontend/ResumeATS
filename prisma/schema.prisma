@@ -44,6 +44,8 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?
+  careerLevel   String?
+  industry      String?
   accounts      Account[]
   sessions      Session[]
   resumes       Resume[]

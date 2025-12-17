@@ -1,38 +1,33 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
-    const mockResumes = [
-      {
-        id: '1',
-        fileName: 'software-engineer-resume.pdf',
-        originalName: 'Software Engineer Resume.pdf',
-        atsScore: 85,
-        status: 'Optimized',
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '2',
-        fileName: 'product-manager-resume.pdf',
-        originalName: 'Product Manager Resume.pdf',
-        atsScore: 72,
-        status: 'Needs Work',
-        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '3',
-        fileName: 'data-scientist-resume.pdf',
-        originalName: 'Data Scientist Resume.pdf',
-        atsScore: 91,
-        status: 'Excellent',
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-      }
-    ];
+    const session = await getServerSession(authOptions)
+    
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    return NextResponse.json(mockResumes);
+    const resumes = await prisma.resume.findMany({
+      where: { userId: session.user.id },
+      orderBy: { updatedAt: 'desc' }
+    })
+
+    return NextResponse.json(resumes.map(resume => ({
+      id: resume.id,
+      title: resume.originalName,
+      fileName: resume.fileName,
+      atsScore: resume.atsScore,
+      status: resume.status,
+      createdAt: resume.createdAt,
+      updatedAt: resume.updatedAt,
+      tags: resume.keywords ? resume.keywords.split(',') : []
+    })))
   } catch (error) {
-    console.error('Error fetching resumes:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch resumes' }, { status: 500 })
   }
 }
 

@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 import { parseResumeFile } from '@/lib/fileParser';
 
 export async function POST(request) {
   try {
+    const session = await getServerSession(authOptions);
     const formData = await request.formData();
     const file = formData.get('resume');
     const jobDescription = formData.get('jobDescription');
@@ -22,6 +26,32 @@ export async function POST(request) {
     const matches = resumeWords.filter(word => jobWords.includes(word));
     const score = Math.min(100, Math.round((matches.length / jobWords.length) * 100));
     
+    // Save resume to database if user is logged in
+    let resumeId = null;
+    if (session?.user?.id) {
+      const savedResume = await prisma.resume.create({
+        data: {
+          userId: session.user.id,
+          fileName: file.name,
+          originalName: file.name,
+          filePath: 'temp', // In production, save to cloud storage
+          fileSize: file.size,
+          mimeType: file.type,
+          atsScore: score,
+          status: 'analyzed',
+          feedback: JSON.stringify({
+            matches,
+            topIssues: [
+              `Keyword Match: ${matches.length}/${jobWords.length}`,
+              matches.length < 5 ? 'Low keyword density' : 'Good keyword coverage',
+              resumeText.length < 500 ? 'Resume too short' : 'Adequate length'
+            ]
+          })
+        }
+      });
+      resumeId = savedResume.id;
+    }
+    
     return NextResponse.json({
       score,
       topIssues: [
@@ -29,9 +59,11 @@ export async function POST(request) {
         matches.length < 5 ? 'Low keyword density' : 'Good keyword coverage',
         resumeText.length < 500 ? 'Resume too short' : 'Adequate length'
       ],
-      resumeText // Store for detailed analysis
+      resumeText,
+      resumeId
     });
   } catch (error) {
+    console.error('Upload error:', error);
     return NextResponse.json(
       { error: 'Failed to process resume' },
       { status: 500 }

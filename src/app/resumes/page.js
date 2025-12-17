@@ -53,6 +53,30 @@ export default function MyResumes() {
     console.log('Downloading:', resume.originalName);
   };
 
+  const handleFileUpload = async (file) => {
+    const formData = new FormData();
+    formData.append('resume', file);
+    formData.append('jobDescription', 'General job requirements');
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const result = await response.json();
+      if (result.error) {
+        alert(`Upload failed: ${result.error}`);
+      } else {
+        alert('Resume uploaded successfully!');
+        fetchResumes(); // Refresh the list
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Upload failed. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
@@ -85,10 +109,22 @@ export default function MyResumes() {
               </div>
             )}
             
-            <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
-              <FaUpload />
-              Upload New Resume
-            </button>
+            <div>
+              <input
+                type="file"
+                accept=".pdf,.docx,.txt"
+                onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0])}
+                className="hidden"
+                id="resume-upload"
+              />
+              <label
+                htmlFor="resume-upload"
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 cursor-pointer"
+              >
+                <FaUpload />
+                Upload New Resume
+              </label>
+            </div>
           </div>
         </div>
 
@@ -173,10 +209,22 @@ export default function MyResumes() {
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
               Upload your first resume to get started with ATS optimization and improve your job search success.
             </p>
-            <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mx-auto">
-              <FaUpload />
-              Upload Your First Resume
-            </button>
+            <div>
+              <input
+                type="file"
+                accept=".pdf,.docx,.txt"
+                onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0])}
+                className="hidden"
+                id="first-resume-upload"
+              />
+              <label
+                htmlFor="first-resume-upload"
+                className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mx-auto cursor-pointer"
+              >
+                <FaUpload />
+                Upload Your First Resume
+              </label>
+            </div>
           </motion.div>
         )}
       </div>
