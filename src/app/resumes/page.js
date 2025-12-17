@@ -1,25 +1,32 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { 
+  FaFileAlt, 
+  FaUpload,
+  FaDownload,
+  FaEye,
+  FaEdit,
+  FaTrash,
+  FaPlus,
+  FaLock,
+  FaCrown
+} from 'react-icons/fa';
 
-export default function ResumesPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+export default function MyResumes() {
+  const { data: session } = useSession();
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Mock user subscription
+  const userPlan = 'FREE_TRIAL';
+  const trialDaysLeft = 2;
+
   useEffect(() => {
-    if (status === 'loading') return;
-    if (!session) {
-      router.push('/auth/signin');
-      return;
-    }
-    
     fetchResumes();
-  }, [session, status, router]);
+  }, []);
 
   const fetchResumes = async () => {
     try {
@@ -27,110 +34,150 @@ export default function ResumesPage() {
       const data = await response.json();
       setResumes(data);
     } catch (error) {
-      console.error('Failed to fetch resumes:', error);
+      console.error('Error fetching resumes:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  if (status === 'loading' || loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  }
+  const handleDownload = (resume) => {
+    if (userPlan === 'EXPIRED_TRIAL') {
+      alert('Your free trial has expired. Upgrade to Pro to download reports.');
+      return;
+    }
+    
+    if (userPlan === 'FREE_TRIAL') {
+      alert(`Free trial: ${trialDaysLeft} days left. Upgrade to Pro for unlimited downloads.`);
+    }
+    
+    console.log('Downloading:', resume.originalName);
+  };
 
-  if (!session) {
-    return null;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading resumes...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pt-20">
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold">My Resumes</h1>
-            <p className="text-gray-600 mt-2">Manage and optimize your resume collection</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">My Resumes</h1>
+            <p className="text-gray-600">Manage and optimize your resume collection</p>
           </div>
-          <Link href="/scan" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
-            New Scan
-          </Link>
-        </div>
-
-        {resumes.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <div className="text-6xl mb-6">📄</div>
-            <h2 className="text-2xl font-semibold mb-4">No resumes yet</h2>
-            <p className="text-gray-600 mb-8">Upload your first resume to start optimizing for ATS systems</p>
-            <Link href="/scan" className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700">
-              Upload Resume
-            </Link>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {resumes.map((resume) => (
-              <div key={resume.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-2">{resume.title}</h3>
-                      <p className="text-sm text-gray-600">
-                        Updated {new Date(resume.updatedAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="text-2xl">📄</div>
-                  </div>
-                  
-                  {resume.tags && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {resume.tags.split(',').map((tag, index) => (
-                        <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                          {tag.trim()}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <div className="flex justify-between items-center">
-                    <div className="text-sm text-gray-600">
-                      {resume.analyses?.length || 0} scans
-                    </div>
-                    <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-800 text-sm">
-                        View
-                      </button>
-                      <button className="text-gray-600 hover:text-gray-800 text-sm">
-                        Edit
-                      </button>
-                    </div>
-                  </div>
+          
+          <div className="flex items-center gap-4">
+            {userPlan === 'FREE_TRIAL' && (
+              <div className="bg-orange-100 border border-orange-200 rounded-lg px-4 py-2">
+                <div className="flex items-center gap-2">
+                  <FaCrown className="text-orange-600" />
+                  <span className="text-orange-800 font-medium text-sm">
+                    Trial: {trialDaysLeft} days left
+                  </span>
                 </div>
               </div>
+            )}
+            
+            <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+              <FaUpload />
+              Upload New Resume
+            </button>
+          </div>
+        </div>
+
+        {resumes.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {resumes.map((resume, index) => (
+              <motion.div 
+                key={resume.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <FaFileAlt className="text-blue-600 text-xl" />
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    resume.status === 'Excellent' ? 'bg-green-100 text-green-800' :
+                    resume.status === 'Optimized' ? 'bg-blue-100 text-blue-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {resume.status}
+                  </span>
+                </div>
+                
+                <h3 className="font-bold text-gray-800 mb-2 text-lg">{resume.originalName}</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Uploaded {new Date(resume.createdAt).toLocaleDateString()}
+                </p>
+                
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-600 font-medium">ATS Score</span>
+                    <span className={`font-bold text-lg ${
+                      resume.atsScore >= 80 ? 'text-green-600' : 
+                      resume.atsScore >= 60 ? 'text-yellow-600' : 'text-red-600'
+                    }`}>
+                      {resume.atsScore}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div 
+                      className={`h-3 rounded-full transition-all ${
+                        resume.atsScore >= 80 ? 'bg-green-500' : 
+                        resume.atsScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${resume.atsScore}%` }}
+                    ></div>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium">
+                    <FaEye className="text-sm" />
+                    View
+                  </button>
+                  <button 
+                    onClick={() => handleDownload(resume)}
+                    className={`flex-1 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 font-medium ${
+                      userPlan === 'EXPIRED_TRIAL' 
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                        : 'bg-green-600 text-white hover:bg-green-700'
+                    }`}
+                    disabled={userPlan === 'EXPIRED_TRIAL'}
+                  >
+                    {userPlan === 'EXPIRED_TRIAL' ? <FaLock className="text-sm" /> : <FaDownload className="text-sm" />}
+                    {userPlan === 'EXPIRED_TRIAL' ? 'Locked' : 'Download'}
+                  </button>
+                </div>
+              </motion.div>
             ))}
           </div>
-        )}
-
-        {/* Version Manager for Pro Users */}
-        {session.user.subscriptionTier !== 'FREE' && (
-          <div className="mt-12 bg-white rounded-lg shadow p-8">
-            <h2 className="text-2xl font-semibold mb-6">Resume Version Manager</h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <div className="text-4xl mb-4">📋</div>
-                <h3 className="font-semibold mb-2">Create Master Resume</h3>
-                <p className="text-gray-600 mb-4">Complete career history for all applications</p>
-                <button className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700">
-                  Create Master
-                </button>
-              </div>
-              
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <div className="text-4xl mb-4">🎯</div>
-                <h3 className="font-semibold mb-2">Targeted Versions</h3>
-                <p className="text-gray-600 mb-4">Tailored resumes for specific roles</p>
-                <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
-                  Create Version
-                </button>
-              </div>
-            </div>
-          </div>
+        ) : (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl p-12 shadow-lg text-center"
+          >
+            <FaFileAlt className="text-6xl text-gray-300 mx-auto mb-6" />
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">No Resumes Yet</h2>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              Upload your first resume to get started with ATS optimization and improve your job search success.
+            </p>
+            <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mx-auto">
+              <FaUpload />
+              Upload Your First Resume
+            </button>
+          </motion.div>
         )}
       </div>
     </div>

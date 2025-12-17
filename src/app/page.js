@@ -1,9 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import AnimatedCounter from './components/AnimatedCounter';
+import AuthModal from './components/AuthModal';
 import { 
   FaRocket, 
   FaCheck, 
@@ -47,12 +50,25 @@ const staggerContainer = {
 };
 
 export default function Home() {
+  const { data: session } = useSession();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('signin');
+  
   const [heroRef, heroInView] = useInView({ threshold: 0.3, triggerOnce: true });
   const [problemRef, problemInView] = useInView({ threshold: 0.3, triggerOnce: true });
   const [solutionRef, solutionInView] = useInView({ threshold: 0.3, triggerOnce: true });
   const [featuresRef, featuresInView] = useInView({ threshold: 0.3, triggerOnce: true });
   const [testimonialsRef, testimonialsInView] = useInView({ threshold: 0.3, triggerOnce: true });
   const [statsRef, statsInView] = useInView({ threshold: 0.3, triggerOnce: true });
+
+  const handleScanClick = () => {
+    if (session) {
+      window.location.href = '/scan';
+    } else {
+      setAuthMode('signin');
+      setAuthModalOpen(true);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -134,14 +150,14 @@ export default function Home() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Link 
-                  href="/scan" 
+                <button 
+                  onClick={handleScanClick}
                   className="bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold px-10 py-5 rounded-2xl text-lg hover:shadow-2xl transition-all duration-300 flex items-center gap-3 group"
                 >
                   <FaRocket className="text-xl group-hover:animate-bounce" />
                   Scan My Resume - FREE
                   <FaArrowRight className="text-lg group-hover:translate-x-1 transition-transform" />
-                </Link>
+                </button>
               </motion.div>
               
               <motion.div 
@@ -251,7 +267,7 @@ export default function Home() {
       </div>
 
       {/* Solution Section */}
-      <div ref={solutionRef} className="py-20 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 text-white relative overflow-hidden">
+      <div id="solution" ref={solutionRef} className="py-20 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-0 left-0 w-full h-full" style={{
             backgroundImage: 'radial-gradient(circle at 20% 50%, #ffffff 1px, transparent 1px), radial-gradient(circle at 80% 50%, #ffffff 1px, transparent 1px)',
@@ -326,7 +342,7 @@ export default function Home() {
       </div>
 
       {/* Features Section */}
-      <div ref={featuresRef} className="py-20 bg-gradient-to-br from-gray-50 to-blue-50 relative">
+      <div id="features" ref={featuresRef} className="py-20 bg-gradient-to-br from-gray-50 to-blue-50 relative">
         <div className="container mx-auto px-4">
           <motion.div 
             className="text-center mb-16"
@@ -567,9 +583,12 @@ export default function Home() {
                 <li className="flex items-center"><FaTimes className="text-gray-500 mr-3" />Detailed Analysis</li>
                 <li className="flex items-center"><FaTimes className="text-gray-500 mr-3" />Resume Download</li>
               </ul>
-              <Link href="/scan" className="block w-full bg-white/20 text-center py-3 rounded-xl font-semibold hover:bg-white/30 transition-all">
+              <button 
+                onClick={handleScanClick}
+                className="block w-full bg-white/20 text-center py-3 rounded-xl font-semibold hover:bg-white/30 transition-all"
+              >
                 Start Free Scan
-              </Link>
+              </button>
             </motion.div>
             
             {/* Pro Plan */}
@@ -655,18 +674,26 @@ export default function Home() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Link 
-                href="/scan" 
+              <button 
+                onClick={handleScanClick}
                 className="inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold px-12 py-5 rounded-2xl text-xl hover:shadow-2xl transition-all duration-300 group"
               >
                 <FaRocket className="text-xl group-hover:animate-bounce" />
                 Start Your Success Story - FREE
                 <FaArrowRight className="text-lg group-hover:translate-x-1 transition-transform" />
-              </Link>
+              </button>
             </motion.div>
           </motion.div>
         </div>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        mode={authMode}
+        callbackUrl="/scan"
+      />
 
       <style jsx>{`
         @keyframes blob {

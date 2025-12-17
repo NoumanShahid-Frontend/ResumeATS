@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,68 +10,70 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model User {
   id            String    @id @default(cuid())
-  email         String    @unique
-  password      String?
   name          String?
-  careerLevel   String?
-  industry      String?
-  targetRoles   String?
-  subscriptionTier String @default("FREE")
-  subscriptionEnd DateTime?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  accounts      Account[]
+  sessions      Session[]
+  resumes       Resume[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  
-  resumes       Resume[]
-  analyses      Analysis[]
-  
-  @@map("users")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 model Resume {
   id          String   @id @default(cuid())
   userId      String
-  title       String
-  fileName    String?
-  fileUrl     String?
-  parsedData  String?
-  tags        String?
+  fileName    String
+  originalName String
+  filePath    String
+  fileSize    Int
+  mimeType    String
+  atsScore    Int?
+  status      String   @default("pending") // pending, analyzed, optimized
+  feedback    String?
+  keywords    String?
+  suggestions String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  analyses    Analysis[]
-  
-  @@map("resumes")
-}
-
-model JobDescription {
-  id          String   @id @default(cuid())
-  userId      String
-  title       String
-  company     String?
-  rawText     String
-  parsedKeywords String?
-  createdAt   DateTime @default(now())
-  
-  analyses    Analysis[]
-  
-  @@map("job_descriptions")
-}
-
-model Analysis {
-  id              String   @id @default(cuid())
-  userId          String
-  resumeId        String
-  jobDescriptionId String?
-  score           Int
-  reportData      String
-  createdAt       DateTime @default(now())
-  
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  resume          Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
-  jobDescription  JobDescription? @relation(fields: [jobDescriptionId], references: [id])
-  
-  @@map("analyses")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -1,154 +1,247 @@
 'use client';
 
+import { useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import FileUpload from '../components/FileUpload';
-import ScoreTeaser from '../components/ScoreTeaser';
+import Link from 'next/link';
 import { 
-  FaExclamationTriangle, 
-  FaSearch, 
+  FaUpload, 
   FaFileAlt, 
-  FaEnvelope, 
+  FaCheckCircle, 
   FaSpinner,
-  FaRocket,
-  FaRedo,
-  FaCrown,
-  FaGift
+  FaChartLine,
+  FaDownload,
+  FaRocket
 } from 'react-icons/fa';
 
 export default function ScanPage() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const router = useRouter();
-  const [scanResult, setScanResult] = useState(null);
-  const [isGuest, setIsGuest] = useState(false);
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [dragActive, setDragActive] = useState(false);
 
-  useEffect(() => {
-    if (status === 'loading') return;
-    
-    // Allow guest access but track it
-    if (!session) {
-      setIsGuest(true);
-    }
-  }, [session, status]);
-
-  const handleScanComplete = (result) => {
-    setScanResult(result);
-    
-    // Prompt guest users to sign up after scan
-    if (isGuest) {
-      setTimeout(() => {
-        if (confirm('Sign up to save your results and get unlimited scans!')) {
-          router.push('/auth/signup');
-        }
-      }, 3000);
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
     }
   };
 
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center">
-          <FaSpinner className="animate-spin text-4xl text-blue-600 mb-4 mx-auto" />
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file || !session) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/resumes', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setResult(data);
+      } else {
+        console.error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (!session) {
+    router.push('/');
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 pt-20">
       <div className="container mx-auto px-4 py-8">
-        {isGuest && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8 max-w-4xl mx-auto">
-            <div className="flex items-center">
-              <FaExclamationTriangle className="text-yellow-600 mr-3 flex-shrink-0" />
-              <div>
-                <p className="font-medium text-yellow-800">Guest Mode</p>
-                <p className="text-sm text-yellow-700">
-                  Sign up to save your results and get unlimited scans!
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <FaRocket className="text-blue-600 text-3xl" />
-              <h1 className="text-4xl font-bold text-gray-800">ATS Resume Scanner</h1>
-            </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-12"
+          >
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              Resume ATS Scanner
+            </h1>
             <p className="text-xl text-gray-600">
-              Upload your resume and job description to get instant ATS compatibility feedback
+              Upload your resume and get instant ATS optimization feedback
             </p>
-          </div>
+          </motion.div>
 
-          {!scanResult ? (
-            <div className="bg-white rounded-2xl shadow-xl p-8">
-              <FileUpload onUpload={handleScanComplete} />
-              
-              {/* Free tier limitations */}
-              {session?.user?.subscriptionTier === 'FREE' && (
-                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <FaGift className="text-blue-600" />
-                    <p className="text-sm text-blue-800">
-                      <strong>Free Plan:</strong> 1 scan per month. 
-                      <a href="/pricing" className="underline ml-1 hover:text-blue-900">Upgrade for unlimited scans</a>
+          {!result ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white rounded-2xl p-8 shadow-xl"
+            >
+              <div
+                className={`border-2 border-dashed rounded-xl p-12 text-center transition-all ${
+                  dragActive 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : 'border-gray-300 hover:border-blue-400'
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              >
+                {file ? (
+                  <div className="space-y-4">
+                    <FaFileAlt className="text-6xl text-blue-600 mx-auto" />
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{file.name}</h3>
+                      <p className="text-gray-600">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                    <button
+                      onClick={handleUpload}
+                      disabled={uploading}
+                      className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mx-auto disabled:opacity-50"
+                    >
+                      {uploading ? (
+                        <>
+                          <FaSpinner className="animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <FaRocket />
+                          Analyze Resume
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <FaUpload className="text-6xl text-gray-400 mx-auto" />
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        Drop your resume here
+                      </h3>
+                      <p className="text-gray-600 mb-4">
+                        or click to browse files
+                      </p>
+                      <input
+                        type="file"
+                        onChange={handleFileChange}
+                        accept=".pdf,.doc,.docx"
+                        className="hidden"
+                        id="file-upload"
+                      />
+                      <label
+                        htmlFor="file-upload"
+                        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer inline-block"
+                      >
+                        Choose File
+                      </label>
+                    </div>
+                    <p className="text-sm text-gray-500">
+                      Supports PDF, DOC, DOCX files up to 10MB
                     </p>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            </motion.div>
           ) : (
-            <div className="space-y-8">
-              <ScoreTeaser score={scanResult.score} topIssues={scanResult.topIssues} />
-              
-              {/* Upgrade prompts */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-2xl p-8 text-center">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <FaCrown className="text-yellow-400 text-2xl" />
-                  <h2 className="text-2xl font-bold">Want More Insights?</h2>
-                </div>
-                <div className="grid md:grid-cols-3 gap-6 mb-6">
-                  <div className="bg-white/10 rounded-lg p-4">
-                    <FaSearch className="text-3xl mb-2 mx-auto text-blue-200" />
-                    <h3 className="font-semibold mb-2">Detailed Analysis</h3>
-                    <p className="text-sm opacity-90">Side-by-side comparison with recommendations</p>
-                  </div>
-                  <div className="bg-white/10 rounded-lg p-4">
-                    <FaFileAlt className="text-3xl mb-2 mx-auto text-blue-200" />
-                    <h3 className="font-semibold mb-2">Optimized Resume</h3>
-                    <p className="text-sm opacity-90">Download ATS-friendly version instantly</p>
-                  </div>
-                  <div className="bg-white/10 rounded-lg p-4">
-                    <FaEnvelope className="text-3xl mb-2 mx-auto text-blue-200" />
-                    <h3 className="font-semibold mb-2">Cover Letter</h3>
-                    <p className="text-sm opacity-90">AI-generated matching cover letter</p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
+            >
+              <div className="bg-white rounded-2xl p-8 shadow-xl">
+                <div className="flex items-center gap-4 mb-6">
+                  <FaCheckCircle className="text-4xl text-green-500" />
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Analysis Complete!</h2>
+                    <p className="text-gray-600">Your resume has been analyzed</p>
                   </div>
                 </div>
-                
-                <div className="flex flex-col sm:flex-row justify-center gap-4">
-                  <button className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
-                    Get Full Report - $4.99
-                  </button>
-                  <button className="border border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors">
-                    Start Free Trial
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+                    <div className="text-3xl font-bold text-blue-600 mb-2">{result.atsScore}%</div>
+                    <div className="text-gray-700 font-medium">ATS Score</div>
+                  </div>
+                  <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+                    <div className="text-3xl font-bold text-green-600 mb-2">Good</div>
+                    <div className="text-gray-700 font-medium">Overall Rating</div>
+                  </div>
+                  <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
+                    <div className="text-3xl font-bold text-purple-600 mb-2">5</div>
+                    <div className="text-gray-700 font-medium">Improvements</div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Key Findings</h3>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-gray-700">{result.feedback}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Detected Keywords</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {result.keywords?.split(', ').map((keyword, index) => (
+                        <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Suggestions</h3>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <p className="text-gray-700">{result.suggestions}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 mt-8">
+                  <Link href="/dashboard" className="flex-1">
+                    <button className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                      <FaChartLine />
+                      View Dashboard
+                    </button>
+                  </Link>
+                  <button className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                    <FaDownload />
+                    Download Report
                   </button>
                 </div>
               </div>
-              
-              <div className="text-center">
-                <button
-                  onClick={() => setScanResult(null)}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mx-auto"
-                >
-                  <FaRedo />
-                  Scan Another Resume
-                </button>
-              </div>
-            </div>
+            </motion.div>
           )}
         </div>
       </div>
