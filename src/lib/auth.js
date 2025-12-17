@@ -50,8 +50,8 @@ export const authOptions = {
       }
     }),
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientId: process.env.GOOGLE_CLIENT_ID || '991791678701-22o7vtbaivcjb1e31d55ags86b2fe8dv.apps.googleusercontent.com',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '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',
       authorization: {
         params: {
           prompt: "consent",
