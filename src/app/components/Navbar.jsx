@@ -14,7 +14,7 @@ import {
   FaBars, 
   FaTimes,
   FaHome,
-  FaScan,
+  FaSearch,
   FaBell,
   FaCog
 } from 'react-icons/fa';
@@ -34,7 +34,7 @@ export default function Navbar() {
 
   const navItems = [
     { name: 'Home', href: '/', icon: FaHome },
-    { name: 'Scan Resume', href: '/scan', icon: FaScan },
+    { name: 'Scan Resume', href: '/scan', icon: FaSearch },
     { name: 'Pricing', href: '/pricing', icon: FaDollarSign }
   ];
 
